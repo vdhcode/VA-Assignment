@@ -51,10 +51,10 @@ export default async function Results({
       <h1>Search results</h1>
 
       <SearchResultsComponent
-        // holidays={sortedHolidays}
-        // totalHolidays={holidays.length}
-        // filterOptions={filterOptions}
-        // searchState={searchState}
+        holidays={sortedHolidays}
+        totalHolidays={holidays.length}
+        filterOptions={filterOptions}
+        searchState={searchState}
         searchParams={params}
       />
     </>

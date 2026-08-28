@@ -1,0 +1,34 @@
+.sortControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.label {
+  color: #030c16;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sortControl select {
+  min-width: 158px;
+  padding: 9px 32px 9px 12px;
+  border: 1px solid #cfd0d2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #030c16;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sortControl select:hover {
+  border-color: #808489;
+}
+
+.sortControl select:focus-visible {
+  outline: 2px solid #030c16;
+  outline-offset: 2px;
+}
