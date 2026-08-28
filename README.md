@@ -24,6 +24,14 @@ The implementation provides:
 - Keyboard-friendly controls and accessible labelling
 - Automated domain and component tests
 
+## Use of AI
+
+AI was used as a development aid during this exercise, particularly to accelerate my learning of Next.js, as this was my first hands-on Next.js project.
+
+I used AI to understand Next.js concepts and project structure, review implementation approaches, troubleshoot errors, improve accessibility and testing, and validate potential solutions. I reviewed, adapted and tested the generated suggestions against the requirements rather than relying on them without verification.
+
+All final implementation decisions, code changes and validation were performed in the project, including manual UI testing, `npm test`, TypeScript checks, ESLint and the production build.
+
 ## Design approach
 
 The implementation intentionally separates business logic from UI code.
