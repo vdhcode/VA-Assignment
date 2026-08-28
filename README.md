@@ -1,93 +1,479 @@
-# Virgin Atlantic Front-end Test
+# Virgin Atlantic Front-End Test
 
-Thank you for your interest in joining our front-end team and taking the time to do the test. We think it will provide a nice and interesting challenge and a good talking point for the next stage of the process.
+A production-minded implementation of the Virgin Atlantic holiday search results experience.
 
-This exercise uses React, TypeScript, and Next.js App Router. The starter app provides sample holiday searches and a fixture-backed results route.
+The solution focuses on making the search state predictable, URL-driven, accessible, responsive and easy to test, while keeping the UI components focused on presentation and user interaction.
 
-## Rules
-You must write the application in React and TypeScript with Next.js. This is already set up in the project.
+## Overview
 
-For the test you should adhere to the following conditions:
+The implementation provides:
 
-1. The code must be your own work. If you use a small external snippet, clearly comment and attribute it.
-2. Include the tests you think are appropriate.
-3. Give consideration to performance, accessibility, responsive behaviour, and empty states.
-4. Code should be clear, concise, typed, and human readable.
-5. You may use small, headless, or primitive component libraries where they help, but avoid assembling the page from a large opinionated UI kit. We want to see your component and styling decisions.
-6. Use the included CSS setup or whatever CSS approach you are comfortable with.
-7. You may use AI tools, but tell us which tools or models you used and what you used them for. You remain responsible for understanding and owning the submitted code.
+- Holiday search result rendering from the supplied fixture data
+- Price filtering with a dual-ended range slider
+- Minimum and maximum price inputs
+- Multiple star-rating selection
+- Multiple facility selection
+- Combined filters
+- URL-persisted filter and sort state
+- Clear-all filters
+- Result count such as `4 of 6 holidays shown`
+- Sorting by recommended, price and rating
+- Empty-result state
+- Fixture image handling with a graceful fallback
+- Responsive desktop, tablet and mobile layouts
+- Keyboard-friendly controls and accessible labelling
+- Automated domain and component tests
 
-## What it should do
-Build the search results page. It should display useful holiday cards for a selected location and departure date, with enough information for a customer to compare options.
+## Design approach
 
-Select the data items you think matter most. As a guide, a useful card might include hotel name, destination, imagery, rating, board basis, duration, price per person, total price, and a small set of facilities or highlights.
+The implementation intentionally separates business logic from UI code.
 
-Add the ability to filter the results by:
+```text
+URL search parameters
+        │
+        ▼
+Search-state parsing
+        │
+        ▼
+Domain filtering + sorting
+        │
+        ▼
+Search results page
+        │
+        ├── Filters
+        ├── Sort
+        └── Holiday cards
+```
 
-1. Price per person
-2. Hotel facilities
-3. Star rating
+The domain layer does not depend on React or Next.js. This keeps filtering, sorting and URL parsing deterministic and easy to test.
 
-Filters should work together, and customers should be able to clear or reset their choices. Filter state should be reflected in the URL so the page can be refreshed or shared without losing the selected filters. Show a helpful empty state when no holidays match the selected filters.
+## Architecture
 
-Add a sort control for:
+### Domain layer
 
-1. Recommended
-2. Price, low to high
-3. Rating, high to low
+The domain layer owns:
 
-Derive filter options from the fixture data rather than hard-coding them.
+- Holiday package types
+- Search/filter state
+- Supported sort options
+- URL parsing
+- URL serialization
+- Filtering
+- Sorting
+- Filter-option derivation
 
-We are interested in your judgement as well as the implementation. Make pragmatic decisions about filter usability, missing data, responsive layout, and how much information to show.
+The URL parser is framework-independent. It accepts `URLSearchParams` and produces a typed `HolidayPackageSearchState`.
 
-## Data
+This is useful because the same logic can be tested without rendering React components.
 
-Sample links are provided on the home route as entry points into the results page.
+### Results page
 
-Holiday package data is provided in `fixtures/search-results.json`. Use this fixture as the source of truth for the exercise; do not integrate with a live API.
+The results page receives the Next.js search parameters, resolves the current search state and passes the derived data into the presentation layer.
 
-The fixture includes varied prices, facilities, rating formats, selected dates, duplicate hotels with different board bases, inconsistent facility casing, long hotel names, and missing image/facility data so the app can be reviewed without relying on a live service.
+The page follows this general flow:
 
-Typings for the fixture data are provided in `src/types/booking.ts`.
+```text
+fixture data
+    ↓
+normalise fixture data
+    ↓
+derive available filter options
+    ↓
+parse URL search state
+    ↓
+filter holiday packages
+    ↓
+sort holiday packages
+    ↓
+render results
+```
 
-Treat the fixture as if it came from a real service boundary. We are interested in how you model, normalize, and validate imperfect external data before rendering it. You may use a schema library such as Zod if you think it is appropriate.
+### Search results component
 
-## A good result
+`SearchResultsComponent` is responsible for the results experience rather than the business rules.
 
-A good submission should:
+It coordinates:
 
-1. Render a responsive list of comparable holiday cards.
-2. Provide accessible, labelled filter controls.
-3. Combine price, facility, and star-rating filters correctly.
-4. Preserve filter and sort state in the URL.
-5. Derive available filter options from the data.
-6. Handle missing images, empty facilities, duplicate/cased facilities, duplicate hotels, long names, and string/number ratings gracefully.
-7. Keep component, data-shaping, and filtering logic easy to follow.
-8. Include focused tests where they add confidence.
+- Search summary
+- Filter panel
+- Result count
+- Sort control
+- Holiday cards
+- Empty state
 
-## What we will review
+The result count is exposed using `aria-live="polite"` so changes can be announced to assistive technology without being overly disruptive.
 
-We will focus on:
+### Holiday card
 
-1. Correct, accessible, responsive UI.
-2. Clear state and data flow.
-3. Good TypeScript modelling and defensive handling of imperfect data.
-4. Sensible test coverage for filtering, rendering, and edge cases.
-5. Performance choices such as image sizing, server/client boundaries, and avoiding unnecessary work.
+The holiday card is deliberately presentation-focused.
 
-## Supplying your code
-Please **create and commit your code into a public Github repository** and supply the link to the recruiter for review.
+It renders:
 
-Thanks for your time, we look forward to hearing from you!
+- Destination
+- Hotel name
+- Rating
+- Board basis
+- Departure date
+- Highlights
+- Facilities
+- Price per person
+- Total price
 
-## Running the app
+Filtering, sorting and URL state remain outside the card.
 
-`npm run dev` starts the application in development mode.
+The card also protects the layout from unusually long hotel names by visually limiting the title to two lines.
 
-`npm run build` checks a production build.
+## Filtering behaviour
 
-`npm run lint` runs ESLint.
+### Price
 
-`npm run typecheck` runs TypeScript without emitting files.
+The price filter supports two ways of changing the selected range:
 
-Use Node.js 20.19+, 22.13+, or 24+.
+1. Dragging the minimum/maximum slider handles
+2. Editing the `From` and `To` inputs
+
+The important UX decision is that slider movement updates local UI state while the user is moving the handle. The search URL is committed when the interaction finishes rather than on every movement.
+
+This avoids repeatedly triggering the complete filtering/navigation flow while dragging.
+
+The selected range is visually highlighted using the Virgin Atlantic accent colour, while the inactive portions of the track remain neutral.
+
+The text inputs and slider share the same selected range state, so editing one representation updates the other.
+
+### Star rating
+
+Ratings are true multi-select checkboxes.
+
+For example:
+
+```text
+3 stars + 4 stars
+        ↓
+rating=3,4
+```
+
+Ratings are normalised before being written to the URL so the representation is deterministic.
+
+### Facilities
+
+Facilities are also multi-select.
+
+For example:
+
+```text
+Pool + Gym
+      ↓
+facilities=gym,pool
+```
+
+Unknown and duplicate values are ignored/normalised by the domain layer.
+
+### Clear filters
+
+Clear-all removes the filter-specific parameters while preserving unrelated query parameters.
+
+This keeps URL state predictable and avoids accidentally removing parameters that are not owned by the filter UI.
+
+## URL as the source of truth
+
+A key design decision is treating the URL as the persisted search state.
+
+Examples:
+
+```text
+/results
+/results?rating=3,4
+/results?facilities=pool,gym
+/results?minPrice=1000&maxPrice=2000
+/results?rating=3,4&facilities=pool&sort=price
+```
+
+Benefits:
+
+- Refreshing the page preserves the search
+- URLs can be bookmarked/shared
+- Browser navigation works naturally
+- Search state is visible and debuggable
+- UI state can be reconstructed from a URL
+
+The serializer preserves unrelated query parameters and normalises multi-value filters into a stable order.
+
+## Sorting
+
+The sort control supports:
+
+- Recommended
+- Price: Low to high
+- Rating: High to low
+
+Changing the sort keeps the existing filter/search parameters intact.
+
+Selecting Recommended removes the explicit sort parameter so the default behaviour is represented by the absence of a sort value.
+
+## Image handling
+
+The implementation always uses the image URL supplied by the fixture when one is present.
+
+It does **not** silently invent or substitute another image URL.
+
+The image component uses `next/image` and falls back to an accessible placeholder when:
+
+- The fixture does not contain an image
+- The supplied image fails to load
+
+The fixture uses `example.test` image URLs that are not available to Next.js image optimisation in the local environment. Because of that, `unoptimized` is intentionally used for the fixture-backed images.
+
+If real production image URLs are supplied in a production environment, the image configuration can be revisited and optimisation enabled where appropriate.
+
+## Accessibility
+
+Accessibility was treated as part of the component implementation, not as a final pass.
+
+Examples:
+
+- Semantic `fieldset`/`legend` groups for filter categories
+- Native checkbox inputs for multi-select filters
+- Native range inputs for the price slider
+- Labels for range controls
+- Proper `<label>` + `<select>` for sorting
+- Visible keyboard focus states
+- Keyboard interaction for price controls
+- `aria-live="polite"` for changing result counts
+- Semantic `<article>` and heading structure for holiday cards
+- Accessible rating text for rated and unrated hotels
+- Meaningful image alternative text
+- Accessible image fallback
+- Empty-state messaging
+
+The implementation avoids replacing native controls with custom clickable containers where a native accessible control is sufficient.
+
+## Responsive design
+
+The layout is designed to progressively adapt across viewport sizes.
+
+Desktop:
+
+```text
+┌─────────────┐ ┌─────────────────────────────┐
+│   Filters   │ │ Card │ Card │ Card          │
+│             │ │      │      │               │
+└─────────────┘ └─────────────────────────────┘
+```
+
+Tablet:
+
+```text
+┌─────────────┐ ┌───────────────────────┐
+│   Filters   │ │ Card │ Card           │
+└─────────────┘ └───────────────────────┘
+```
+
+Mobile:
+
+```text
+┌─────────────────────┐
+│       Filters       │
+└─────────────────────┘
+
+┌─────────────────────┐
+│        Card         │
+└─────────────────────┘
+
+┌─────────────────────┐
+│        Card         │
+└─────────────────────┘
+```
+
+The implementation was manually checked at desktop and mobile widths, including keyboard navigation.
+
+## Fixture and data considerations
+
+The supplied fixture contains multiple holiday packages, including cases such as:
+
+- Different prices
+- Different ratings
+- Unrated hotels
+- Different board bases
+- Different facilities
+- Missing/optional content
+- Multiple packages for the same hotel
+- Fixture image URLs
+
+The implementation uses the fixture as the source of truth rather than hard-coding specific result counts into the UI.
+
+## Handling edge cases
+
+The domain logic explicitly accounts for invalid or inconsistent URL values.
+
+Examples include:
+
+- Unknown ratings
+- Unknown facilities
+- Duplicate ratings
+- Duplicate facilities
+- Empty filter values
+- Invalid numeric price values
+- Negative numeric values
+- Invalid sort values
+
+The parser normalises valid values and ignores values that are not supported by the currently available fixture/filter options.
+
+## Testing strategy
+
+The tests are intentionally split into two levels.
+
+### Domain tests
+
+Domain tests cover the framework-independent behaviour:
+
+- Search-state parsing
+- URL serialisation
+- Price handling
+- Rating combinations
+- Facility combinations
+- Filtering
+- Sorting
+- Invalid values
+- Duplicate values
+- Preservation of unrelated query parameters
+
+### Component tests
+
+Component tests cover observable UI behaviour:
+
+- Filter rendering
+- Multiple rating selection
+- Multiple facilities
+- Price slider interaction
+- Price input interaction
+- Clear filters
+- Sort selection
+- Holiday card content
+- Rating display
+- Facility limits
+- Missing facilities
+- Image fallback
+- Long hotel names
+
+Current test result:
+
+```text
+6 test files
+73 tests
+73 passed
+```
+
+## Verification
+
+Before submission, the application was checked with:
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+The production build completed successfully.
+
+## Running locally
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Then open the local `/results` route shown by the Next.js development server.
+
+Useful commands:
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npm run start
+```
+
+## Example search URLs
+
+These are useful for manually verifying URL-driven state:
+
+```text
+/results
+/results?rating=3
+/results?rating=3,4
+/results?facilities=pool
+/results?facilities=gym,pool
+/results?minPrice=1000
+/results?maxPrice=2000
+/results?minPrice=1000&maxPrice=2000
+/results?rating=3,4&facilities=pool&sort=price
+```
+
+The exact number of matching results depends on the supplied fixture data.
+
+## Key implementation decisions
+
+### Why keep filtering and sorting in the domain layer?
+
+It makes the core behaviour deterministic and independently testable. The UI does not need to know how the filtering algorithm works.
+
+### Why use the URL for search state?
+
+It makes the results page shareable, reloadable and compatible with browser history.
+
+### Why use local state for the price slider?
+
+Dragging is a transient interaction. Committing the URL only when the user finishes the interaction avoids unnecessary navigation/search work while still keeping the URL authoritative after a commit.
+
+### Why use native form controls?
+
+Native checkboxes, range inputs and selects provide keyboard interaction and baseline accessibility without requiring a larger custom-control implementation.
+
+### Why use a presentation-focused card?
+
+A card should display a holiday package. It should not own search concerns, URL manipulation or filtering rules.
+
+### Why keep image fallback logic separate?
+
+Image loading can fail independently of the rest of the card. Keeping it isolated makes the behaviour easier to reason about and test.
+
+## What I would discuss in an interview
+
+The most important parts of this implementation are not the individual JSX elements. They are the engineering decisions:
+
+1. **URL-driven state** — why search state belongs in the URL and how parsing/serialisation are kept deterministic.
+2. **Domain/UI separation** — why filtering and sorting are framework-independent.
+3. **Price slider interaction** — why the UI uses transient local state and delays URL commits until the interaction completes.
+4. **Accessibility** — why native controls were preferred and how keyboard/screen-reader behaviour was considered.
+5. **Fixture reliability** — why fixture data is treated as the source of truth and why image URLs are never silently replaced.
+6. **Testing strategy** — why both domain-level and component-level tests are useful.
+7. **Trade-offs** — where the implementation intentionally favours simplicity over introducing global state or unnecessary abstraction.
+
+## Final result
+
+The final implementation aims to balance:
+
+```text
+Correctness
+    +
+Usability
+    +
+Accessibility
+    +
+Maintainability
+    +
+Testability
+    +
+Responsive UI
+```
+
+rather than focusing only on making the page look correct.
